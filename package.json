@@ -1,0 +1,16 @@
+{
+  "name": "ofc-server",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "bun-types": "^0.6.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.6.0",
+    "prisma": "^5.6.0"
+  }
+}

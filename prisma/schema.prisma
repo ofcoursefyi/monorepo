@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  relationMode = "prisma"
+  url          = env("DATABASE_URL")
+}
+
+model Term {
+  term        String           @id @db.Char(5)
+  desc        String           @db.VarChar(11)
+  Courses     Course[]
+  Departments TermDepartment[]
+
+  @@unique([term, desc])
+  @@map("terms")
+}
+
+model Department {
+  shared_id String // UUID
+  code      String           @db.VarChar(4)
+  name      String           @db.VarChar(250)
+  version   Int              @default(0)
+  Course    Course[]
+  Terms     TermDepartment[]
+
+  @@id([shared_id, version])
+  @@unique([code, name])
+  @@unique([shared_id, version, code, name])
+  @@map("departments")
+}
+
+model TermDepartment {
+  term          String @db.Char(5)
+  term_readable String @db.VarChar(11)
+
+  shared_id String // UUID
+  version   Int
+  code      String @db.VarChar(4)
+  name      String @db.VarChar(250)
+
+  Department Department @relation(fields: [shared_id, version, code, name], references: [shared_id, version, code, name], onDelete: Restrict)
+  Term       Term       @relation(fields: [term, term_readable], references: [term, desc], onDelete: Restrict)
+
+  @@id([term, shared_id, version])
+  @@map("term_departments")
+}
+
+enum YN {
+  Y
+  N
+}
+
+enum DR {
+  D
+  R
+}
+
+model Course {
+  term                  String     @db.Char(5)
+  is_cross_listed       YN
+  published_course_id   String     @db.VarChar(9)
+  scheduled_course_id   String     @db.VarChar(9)
+  prefix                String     @db.VarChar(4)
+  number                String     @db.Char(3)
+  sequence              String?    @db.Char(1)
+  suffix                String?    @db.VarChar(6)
+  title                 String     @db.VarChar(250)
+  description           String?    @db.VarChar(1000)
+  units_low             Float?     @db.Float
+  units_high            Float?     @db.Float
+  max_units             Float?     @db.Float
+  restriction_by_major  String?    @db.VarChar(1000)
+  restriction_by_class  String?    @db.VarChar(1000)
+  restriction_by_school String?    @db.VarChar(1000)
+  course_notes          String?    @db.VarChar(1000)
+  prereq_text           String?    @db.VarChar(1000)
+  coreq_text            String?    @db.VarChar(1000)
+  dept_id               String // UUID
+  dept_version          Int
+  Department            Department @relation(fields: [dept_id, dept_version], references: [shared_id, version], onDelete: Restrict)
+  Term                  Term       @relation(fields: [term], references: [term], onDelete: Restrict)
+  Sections              Section[]
+
+  @@id([published_course_id, term])
+  @@unique([prefix, number, sequence, term])
+  @@map("courses")
+}
+
+model Instructor {
+  id                 String               @id @default(cuid())
+  last_name          String               @db.VarChar(100)
+  first_name         String               @db.VarChar(100)
+  SectionInstructors SectionInstructors[]
+
+  @@map("instructors")
+}
+
+model Section {
+  id            String    @db.Char(5)
+  course_id     String
+  term          String    @db.Char(5)
+  session       String    @db.Char(3)
+  dclass_code   DR
+  title         String    @db.VarChar(250)
+  section_title String?   @db.VarChar(250)
+  description   String?   @db.VarChar(1000)
+  notes         String?   @db.VarChar(1000)
+  type          String?   @db.VarChar(7)
+  units_low     Float?    @db.Float
+  units_high    Float?    @db.Float
+  cancelled     String?   @db.Char(1)
+  day           String?   @db.VarChar(7)
+  start_time    DateTime? @db.Time(0)
+  end_time      DateTime? @db.Time(0)
+  location      String?   @db.VarChar(50)
+
+  Instructors SectionInstructors[]
+  Course      Course?              @relation(fields: [course_id, term], references: [published_course_id, term], onDelete: Restrict)
+
+  @@id([id, term])
+  @@map("sections")
+}
+
+model SectionInstructors {
+  section_id    String     @db.Char(5)
+  term          String     @db.Char(5)
+  instructor_id String
+  Instructor    Instructor @relation(fields: [instructor_id], references: [id], onDelete: Restrict)
+  Section       Section    @relation(fields: [section_id, term], references: [id, term], onDelete: Cascade)
+
+  @@id([section_id, term, instructor_id])
+  @@map("section_instructors")
+}
