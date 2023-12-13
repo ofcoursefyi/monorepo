@@ -1,34 +1,51 @@
-import { getDepartments } from "./api/departments";
-import { getRecentTerms } from "./api/terms";
-import { apiToDB, api_to_db_sections, getCourses } from "./api/courses";
+import { cast_course_api, cast_section_api, fetch_courses } from "./api/courses";
+import { courses, instructors, sec_instrs, sections } from "./drizzle/schema";
 import { db } from "./drizzle/db";
-import { courses, instructors, sections } from "./drizzle/schema";
 
 async function main() {
-  // const terms = await getRecentTerms();
-  // console.log(terms);
-
-  // const departments = await getDepartments(terms[0]);
-  // console.log(departments);
   const term = ["20241", "SP24"];
 
-  const api_courses = (await getCourses("AME", term[0])).filter(c => c.IsCrossListed === "N");
+  const courses_from_dept = (await fetch_courses("BUAD", term[0])).filter(c => c.IsCrossListed === "N");
 
-  const cs = api_courses.map(c => apiToDB(c, term[1]));
-  const ss = api_courses.map(c => api_to_db_sections(c, term[1]));
+  const new_courses = courses_from_dept.map(c => cast_course_api(c, term[1]));
+  const new_course_secs = courses_from_dept.map(c => cast_section_api(c, term[1]));
 
-  const c = await db.insert(courses).values(api_courses as any);
+  const c = await db.insert(courses).values(new_courses);
   console.log(c);
 
-  const s_flat = ss.flatMap(s => s[0]);
-  const si_flat = ss.flatMap(s => s[1]);
+  const new_secs = new_course_secs.flatMap(s => s.secs);
+  const new_sec_instrs = new_course_secs.flatMap(s => s.prof_to_sec);
 
-  const s = await db.insert(sections).values(s_flat as any);
+  const s = await db.insert(sections).values(new_secs);
   console.log(s);
 
-  const all_inst = (await db.select().from(instructors)).map(i => i.name);
-  for (const [s, si] of ss) {
+  let all = new Map();
+  (await db.query.instructors.findMany()).forEach(i => all.set(i.name, i));
+
+  const to_add = [];
+  for (const [s, si] of new_sec_instrs) {
+    const name = si.first_name + " " + si.last_name;
+    if (all.has(name)) continue;
+    to_add.push({ name });
+    all.set(name, null);
   }
+
+  const i = await db.insert(instructors).values(to_add);
+  console.log(i);
+
+  all = new Map();
+  (await db.query.instructors.findMany()).forEach(i => all.set(i.name, i));
+
+  const to_add_si = [];
+  for (const [s, si] of new_sec_instrs) {
+    const name = si.first_name + " " + si.last_name;
+    if (!all.has(name)) throw new Error("instructor not found");
+
+    to_add_si.push({ sec: s, instr: all.get(name).id, term: term[1] });
+  }
+
+  const si = await db.insert(sec_instrs).values(to_add_si);
+  console.log(si);
 }
 
 main();

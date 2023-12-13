@@ -1,4 +1,5 @@
 import { mysqlTable, index, primaryKey, varchar, mysqlEnum, decimal, int, time } from "drizzle-orm/mysql-core";
+import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
 
 export const courses = mysqlTable(
@@ -49,12 +50,17 @@ export const sections = mysqlTable(
 
     tot_seats: int("tot_seats", { unsigned: true }).notNull(),
     taken_seats: int("taken_seats", { unsigned: true }).notNull(),
+    cancelled: mysqlEnum("cancelled", ["y", "n"]).notNull(),
 
     day: int("day", { unsigned: true }),
     start_time: time("start_time"),
     end_time: time("end_time"),
     loc: varchar("loc", { length: 50 }),
-    cancelled: mysqlEnum("cancelled", ["y", "n"]).notNull(),
+
+    alt_day: int("alt_day", { unsigned: true }),
+    alt_start_time: time("alt_start_time"),
+    alt_end_time: time("alt_end_time"),
+    alt_loc: varchar("alt_loc", { length: 50 }),
 
     title: varchar("title", { length: 250 }).notNull(),
     sec_title: varchar("sec_title", { length: 250 }),
@@ -80,8 +86,9 @@ export const sections = mysqlTable(
 export const instructors = mysqlTable(
   "instructors",
   {
-    email: varchar("email", { length: 100 }).primaryKey().notNull(),
+    id: varchar("id", { length: 25 }).$default(createId).primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
+    email: varchar("email", { length: 100 }),
   },
   table => {
     return {
@@ -94,14 +101,14 @@ export const sec_instrs = mysqlTable(
   "section_instructors",
   {
     term: varchar("term", { length: 5 }).notNull(),
-    section: varchar("section", { length: 5 }).notNull(),
-    instr_email: varchar("instructor_email", { length: 100 }).notNull(),
+    sec: varchar("sec", { length: 5 }).notNull(),
+    instr: varchar("instr", { length: 100 }).notNull(),
   },
   table => {
     return {
-      pk: primaryKey({ columns: [table.term, table.instr_email, table.section] }),
-      idx_instr_email: index("idx_instr_email").on(table.instr_email),
-      idx_section_id: index("idx_section_id").on(table.section),
+      pk: primaryKey({ columns: [table.term, table.instr, table.sec] }),
+      idx_sec: index("idx_sec").on(table.sec),
+      idx_instr: index("idx_instr").on(table.instr),
     };
   }
 );
@@ -124,11 +131,11 @@ export const instructors_rel = relations(instructors, ({ many }) => ({
 
 export const sec_instrs_rel = relations(sec_instrs, ({ one }) => ({
   instructor: one(instructors, {
-    fields: [sec_instrs.instr_email],
-    references: [instructors.email],
+    fields: [sec_instrs.instr],
+    references: [instructors.id],
   }),
   section: one(sections, {
-    fields: [sec_instrs.section, sec_instrs.term],
+    fields: [sec_instrs.sec, sec_instrs.term],
     references: [sections.section, sections.term],
   }),
 }));

@@ -1,6 +1,6 @@
 import { courses, instructors, sec_instrs, sections } from "./schema";
 import { createInsertSchema } from "drizzle-zod";
-import { InferSelectModel } from "drizzle-orm";
+import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 
 const numeric = (s: z.ZodString) =>
@@ -45,20 +45,16 @@ export const iCourseSchema = createInsertSchema(courses, {
   course: courseIdSchema,
   prefix: deptSchema,
   number: courseNumSchema,
-  sequence: seqSchema.optional(),
-  suffix: suffixSchema.optional(),
+  sequence: seqSchema.nullable(),
+  suffix: suffixSchema.nullable(),
   title: z.string().max(250),
-  desc: z.string().max(1000).optional(),
-  units_low: z.number().min(0).max(99.9),
-  units_high: z.number().min(0).max(99.9),
-  units_max: z.number().min(0).max(99.9).optional(),
-  restr_major: z.string().max(2000).optional(),
-  restr_class: z.string().max(1000).optional(),
-  restr_school: z.string().max(2000).optional(),
-  prereq: z.string().max(1000).optional(),
-  coreq: z.string().max(1000).optional(),
+  desc: z.string().max(1000).nullable(),
+  restr_major: z.string().max(2000).nullable(),
+  restr_class: z.string().max(1000).nullable(),
+  restr_school: z.string().max(2000).nullable(),
+  prereq: z.string().max(1000).nullable(),
+  coreq: z.string().max(1000).nullable(),
 });
-export type ICourse = z.infer<typeof iCourseSchema>;
 
 const timeSchema = z
   .string()
@@ -76,31 +72,35 @@ export const iSectionSchema = createInsertSchema(sections, {
   course: courseIdSchema,
   section: numeric(z.string().length(5)),
   session: numeric(z.string().length(3)),
-  day: z.number().min(1).max(127).optional(),
-  start_time: timeSchema.optional(),
-  end_time: timeSchema.optional(),
-  loc: z.string().max(50).optional(),
+  day: z.number().min(1).max(127).nullable(),
+  start_time: timeSchema.nullable(),
+  end_time: timeSchema.nullable(),
+  loc: z.string().max(50).nullable(),
+  alt_day: z.number().min(1).max(127).nullable(),
+  alt_start_time: timeSchema.nullable(),
+  alt_end_time: timeSchema.nullable(),
+  alt_loc: z.string().max(50).nullable(),
   title: z.string().max(250),
-  sec_title: z.string().max(250).optional(),
-  desc: z.string().max(2000).optional(),
-  notes: z.string().max(2000).optional(),
-  units_low: z.number().min(0).max(99.9),
-  units_high: z.number().min(0).max(99.9),
+  sec_title: z.string().max(250).nullable(),
+  desc: z.string().max(2000).nullable(),
+  notes: z.string().max(2000).nullable(),
 });
-export type ISection = z.infer<typeof iSectionSchema>;
 
 export const iInstructorSchema = createInsertSchema(instructors, {
   email: z.string().email().max(100),
   name: z.string().max(100),
 });
-export type IInstructor = z.infer<typeof iInstructorSchema>;
 
 export const iSecInstrSchema = createInsertSchema(sec_instrs, {
   term: termSchema,
-  section: numeric(z.string().length(5)),
-  instr_email: z.string().email().max(100),
+  sec: numeric(z.string().length(5)),
+  instr: z.string().cuid2(),
 });
-export type ISecInstr = z.infer<typeof iSecInstrSchema>;
+
+export type ICourse = InferInsertModel<typeof courses>;
+export type ISection = InferInsertModel<typeof sections>;
+export type IInstructor = InferInsertModel<typeof instructors>;
+export type ISecInstr = InferInsertModel<typeof sec_instrs>;
 
 export type Course = InferSelectModel<typeof courses>;
 export type Section = InferSelectModel<typeof sections>;

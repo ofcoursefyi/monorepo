@@ -14,16 +14,25 @@ export function day_to_num(days: string) {
     switch (dow) {
       case "M":
         tot += 1;
+        break;
       case "T":
         tot += 2;
+        break;
       case "W":
         tot += 4;
-      case "R":
+        break;
+      case "H":
         tot += 8;
+        break;
       case "F":
         tot += 16;
+        break;
       case "S":
         tot += 32;
+        break;
+      case "U":
+        tot += 64;
+        break;
       default:
         throw new Error(`Invalid day of week: ${dow}`);
     }

@@ -34,9 +34,9 @@ export type ApiSection = {
   number_registered: string;
   wait_qty: string;
   canceled: "Y" | "N";
-  day: string | Empty | null;
-  start_time: `${number}${number}:${number}${number}` | null | "TBA";
-  end_time: `${number}${number}:${number}${number}` | null | "TBA";
+  day: string | Empty | null | [string, string];
+  start_time: `${number}:${number}` | null | "TBA" | [`${number}:${number}`, `${number}:${number}`];
+  end_time: `${number}:${number}` | null | "TBA" | [`${number}:${number}`, `${number}:${number}`];
   location: string | Empty | null;
   instructor: ApiInstructor[] | ApiInstructor | null;
 };

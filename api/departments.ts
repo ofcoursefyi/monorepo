@@ -1,7 +1,7 @@
+import type { DepartmentsResponse } from "./types";
 import { is_array } from "./helpers";
-import { DepartmentsResponse } from "./types";
 
-export async function getDepartments(term: string) {
+export async function fetch_departments(term: string) {
   const res = await fetch(`https://web-app.usc.edu/web/soc/api/departments/${term}`);
 
   if (!res.ok) throw new Error("Failed to fetch departments");
