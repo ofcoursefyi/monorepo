@@ -1,43 +1,72 @@
-import { mysqlTable, index, primaryKey, varchar, mysqlEnum, decimal, int, time } from "drizzle-orm/mysql-core";
-import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import {
+  pgTable,
+  pgEnum,
+  primaryKey,
+  foreignKey,
+  index,
+  varchar,
+  text,
+  smallint,
+  decimal,
+  time,
+  boolean,
+  unique,
+} from "drizzle-orm/pg-core";
 
-export const courses = mysqlTable(
+export const depts = pgTable(
+  "depts",
+  {
+    code: varchar("code", { length: 4 }).primaryKey(),
+    name: text("name").notNull(),
+  },
+  table => ({
+    idx_code: index("idx_code").on(table.code),
+  })
+);
+
+export const courses = pgTable(
   "courses",
   {
     term: varchar("term", { length: 4 }).notNull(),
-    dept: varchar("dept", { length: 4 }).notNull(),
     course: varchar("course", { length: 9 }).notNull(),
+    dept: varchar("dept", { length: 4 })
+      .references(() => depts.code, { onUpdate: "cascade", onDelete: "restrict" })
+      .notNull(),
 
     prefix: varchar("prefix", { length: 4 }).notNull(),
     number: varchar("number", { length: 3 }).notNull(),
     sequence: varchar("sequence", { length: 1 }),
     suffix: varchar("suffix", { length: 6 }),
 
-    title: varchar("title", { length: 250 }).notNull(),
-    desc: varchar("desc", { length: 1000 }),
+    title: text("title").notNull(),
+    desc: text("desc"),
 
     units_low: decimal("units_low", { precision: 3, scale: 1 }),
     units_high: decimal("units_high", { precision: 3, scale: 1 }),
     units_max: decimal("units_max", { precision: 3, scale: 1 }),
 
-    restr_major: varchar("restr_major", { length: 2000 }),
-    restr_class: varchar("restr_class", { length: 1000 }),
-    restr_school: varchar("restr_school", { length: 2000 }),
+    restr_major: text("restr_major"),
+    restr_class: text("restr_class"),
+    restr_school: text("restr_school"),
 
-    prereq: varchar("prereq", { length: 1000 }),
-    coreq: varchar("coreq", { length: 1000 }),
+    prereq: text("prereq"),
+    coreq: text("coreq"),
   },
   table => {
     return {
       pk: primaryKey({ columns: [table.term, table.course] }),
-      idx_dept_term: index("idx_dept_term").on(table.term, table.dept),
-      idx_term: index("idx_term").on(table.term),
+      idx_term_dept: index("idx_term_dept").on(table.term, table.dept),
+      idx_dept: index("idx_dept").on(table.dept),
     };
   }
 );
 
-export const sections = mysqlTable(
+export const type_enum = pgEnum("type", ["lec", "dis", "lab", "quiz", "lec-lab", "lec-dis"]);
+export const dcode_enum = pgEnum("dcode", ["d", "r"]);
+
+export const sections = pgTable(
   "sections",
   {
     term: varchar("term", { length: 4 }).notNull(),
@@ -45,75 +74,109 @@ export const sections = mysqlTable(
     section: varchar("section", { length: 5 }).notNull(),
 
     session: varchar("session", { length: 3 }).notNull(),
-    dcode: mysqlEnum("dcode", ["d", "r"]).notNull(),
-    type: mysqlEnum("type", ["lec", "dis", "lab", "quiz", "lec-lab", "lec-dis"]),
+    dcode: dcode_enum("dcode").notNull(),
+    type: type_enum("type").notNull(),
 
-    tot_seats: int("tot_seats", { unsigned: true }).notNull(),
-    taken_seats: int("taken_seats", { unsigned: true }).notNull(),
-    cancelled: mysqlEnum("cancelled", ["y", "n"]).notNull(),
+    tot_seats: smallint("tot_seats").notNull(),
+    taken_seats: smallint("taken_seats").notNull(),
+    cancelled: boolean("cancelled").notNull(),
 
-    day: int("day", { unsigned: true }),
-    start_time: time("start_time"),
-    end_time: time("end_time"),
-    loc: varchar("loc", { length: 50 }),
-
-    alt_day: int("alt_day", { unsigned: true }),
-    alt_start_time: time("alt_start_time"),
-    alt_end_time: time("alt_end_time"),
-    alt_loc: varchar("alt_loc", { length: 50 }),
-
-    title: varchar("title", { length: 250 }).notNull(),
-    sec_title: varchar("sec_title", { length: 250 }),
-    desc: varchar("desc", { length: 2000 }),
-    notes: varchar("notes", { length: 2000 }),
+    title: text("title").notNull(),
+    sec_title: text("sec_title"),
+    desc: text("desc"),
+    notes: text("notes"),
 
     units_low: decimal("units_low", { precision: 3, scale: 1 }),
     units_high: decimal("units_high", { precision: 3, scale: 1 }),
   },
-  table => {
-    return {
-      pk: primaryKey({ columns: [table.section, table.term] }),
-      idx_term: index("idx_term").on(table.term),
-      idx_session: index("idx_session").on(table.session),
-      idx_dcode: index("idx_dcode").on(table.dcode),
-      idx_day: index("idx_day").on(table.day),
-      idx_start_time: index("idx_start_time").on(table.start_time),
-      idx_end_time: index("idx_end_time").on(table.end_time),
-    };
-  }
+  table => ({
+    pk: primaryKey({ columns: [table.section, table.term] }),
+    fk: foreignKey({ columns: [table.term, table.course], foreignColumns: [courses.term, courses.course] })
+      .onDelete("restrict")
+      .onUpdate("restrict"),
+
+    idx_term_course: index("idx_term_course").on(table.term, table.course),
+    idx_course: index("idx_course").on(table.course),
+    idx_session: index("idx_session").on(table.session),
+    idx_dcode: index("idx_dcode").on(table.dcode),
+  })
 );
 
-export const instructors = mysqlTable(
+export const sec_infos = pgTable(
+  "section_infos",
+  {
+    section: varchar("section", { length: 5 }).notNull(),
+    term: varchar("term", { length: 4 }).notNull(),
+
+    day: smallint("day"),
+    start_time: time("start_time"),
+    end_time: time("end_time"),
+    loc: text("loc"),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.section, table.term] }),
+    fk: foreignKey({ columns: [table.section, table.term], foreignColumns: [sections.section, sections.term] })
+      .onDelete("cascade")
+      .onUpdate("restrict"),
+
+    idx_term: index("idx_term").on(table.term),
+    idx_day: index("idx_day").on(table.day),
+    idx_start_time: index("idx_start_time").on(table.start_time),
+    idx_end_time: index("idx_end_time").on(table.end_time),
+  })
+);
+
+export const instructors = pgTable(
   "instructors",
   {
-    id: varchar("id", { length: 25 }).$default(createId).primaryKey(),
-    name: varchar("name", { length: 100 }).notNull(),
-    email: varchar("email", { length: 100 }),
+    id: varchar("id", { length: 15 })
+      .$default(() => nanoid(15))
+      .primaryKey(),
+
+    name: text("name").notNull(),
+    email: text("email"),
   },
   table => {
     return {
       idx_name: index("idx_name").on(table.name),
+      u_id_name: unique("u_id_name").on(table.id, table.name),
     };
   }
 );
 
-export const sec_instrs = mysqlTable(
+export const sec_instrs = pgTable(
   "section_instructors",
   {
     term: varchar("term", { length: 5 }).notNull(),
     sec: varchar("sec", { length: 5 }).notNull(),
-    instr: varchar("instr", { length: 100 }).notNull(),
+    instr_id: varchar("instr_id", { length: 15 }).notNull(),
+    instr_name: text("instr_name").notNull(),
   },
   table => {
     return {
-      pk: primaryKey({ columns: [table.term, table.instr, table.sec] }),
+      pk: primaryKey({ columns: [table.term, table.instr_id, table.sec] }),
+      fk_sec: foreignKey({ columns: [table.term, table.sec], foreignColumns: [sections.term, sections.section] })
+        .onDelete("cascade")
+        .onUpdate("restrict"),
+      fk_instr: foreignKey({
+        columns: [table.instr_id, table.instr_name],
+        foreignColumns: [instructors.id, instructors.name],
+      })
+        .onDelete("restrict")
+        .onUpdate("cascade"),
+
       idx_sec: index("idx_sec").on(table.sec),
-      idx_instr: index("idx_instr").on(table.instr),
+      idx_id: index("idx_id").on(table.instr_id),
+      idx_name: index("idx_instr_name").on(table.instr_name),
     };
   }
 );
 
-export const courses_rel = relations(courses, ({ many }) => ({
+export const courses_rel = relations(courses, ({ one, many }) => ({
+  depts: one(depts, {
+    fields: [courses.dept],
+    references: [depts.code],
+  }),
   sections: many(sections),
 }));
 
@@ -122,7 +185,15 @@ export const sections_rel = relations(sections, ({ one, many }) => ({
     fields: [sections.term, sections.course],
     references: [courses.term, courses.course],
   }),
+  infos: many(sec_infos),
   instructors: many(sec_instrs),
+}));
+
+export const sec_infos_rel = relations(sec_infos, ({ one }) => ({
+  section: one(sections, {
+    fields: [sec_infos.term, sec_infos.section],
+    references: [sections.term, sections.section],
+  }),
 }));
 
 export const instructors_rel = relations(instructors, ({ many }) => ({
@@ -131,8 +202,8 @@ export const instructors_rel = relations(instructors, ({ many }) => ({
 
 export const sec_instrs_rel = relations(sec_instrs, ({ one }) => ({
   instructor: one(instructors, {
-    fields: [sec_instrs.instr],
-    references: [instructors.id],
+    fields: [sec_instrs.instr_id, sec_instrs.instr_name],
+    references: [instructors.id, instructors.name],
   }),
   section: one(sections, {
     fields: [sec_instrs.sec, sec_instrs.term],

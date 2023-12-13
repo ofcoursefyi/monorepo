@@ -16,8 +16,6 @@
     "noEmit": true,
     "types": [
       "bun-types" // add Bun global
-    ],
-
-    "noErrorTruncation": true
+    ]
   }
 }
