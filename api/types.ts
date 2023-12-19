@@ -7,5 +7,8 @@ export type FetchCourses = z.infer<typeof verify.courses>;
 
 export type APITerm = FetchTerm[number];
 export type APIDepartment = FetchDepartment[number];
-export type APICourse = FetchCourses["OfferedCourses"]["course"][number];
+export type APICourse = Exclude<
+  FetchCourses["OfferedCourses"]["course"],
+  null | undefined
+>[number];
 export type APISection = APICourse["CourseData"]["SectionData"][number];
