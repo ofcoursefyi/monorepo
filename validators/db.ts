@@ -1,13 +1,5 @@
-import { type Zodify, alphabetic, digits } from "./util";
+import { alphabetic, digits } from "./util";
 import { z } from "zod";
-import type {
-  Courses,
-  Departments,
-  Sections,
-  Instructors,
-  SDetails,
-  SInstructors,
-} from "../db/drizzle/schema";
 
 const department = {
   code: alphabetic(z.string().min(2).max(4)),
