@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   pgTable,
   uniqueIndex,
@@ -196,3 +197,19 @@ export const Courses = pgTable(
     };
   },
 );
+
+export const CourseRelations = relations(Courses, ({ many }) => ({
+  Sections: many(Sections),
+}));
+
+export const SectionRelations = relations(Sections, ({ one, many }) => ({
+  Course: one(Courses, {
+    fields: [Sections.term, Sections.course],
+    references: [Courses.term, Courses.course],
+  }),
+  Details: one(SDetails, {
+    fields: [Sections.term, Sections.section],
+    references: [SDetails.term, SDetails.section],
+  }),
+  Instructors: many(SInstructors),
+}));
