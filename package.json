@@ -1,23 +1,33 @@
 {
-  "name": "ofc-server",
+  "name": "@ofc/updater",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "push": "prisma db push"
+  },
   "devDependencies": {
-    "bun-types": "^0.6.0"
+    "bun-types": "^0.6.0",
+    "drizzle-kit": "^0.20.14",
+    "prettier": "^3.2.4",
+    "prisma": "^5.8.1",
+    "radash": "^11.0.0"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@paralleldrive/cuid2": "^2.2.2",
-    "@planetscale/database": "^1.11.0",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "drizzle-kit": "^0.20.6",
-    "drizzle-orm": "^0.29.1",
-    "drizzle-zod": "^0.5.1",
-    "eslint-plugin-drizzle": "^0.2.2",
-    "mysql2": "^3.6.5"
+    "@prisma/client": "^5.8.1",
+    "drizzle-orm": "^0.29.3",
+    "nanoid": "^5.0.4",
+    "pg": "^8.11.3",
+    "postgres": "^3.4.3",
+    "string-ts": "^2.0.0"
+  },
+  "prisma": {
+    "schema": "db/schema.prisma"
+  },
+  "prettier": {
+    "experimentalTernaries": true
   }
 }

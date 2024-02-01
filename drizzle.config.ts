@@ -1,9 +1,13 @@
-import type { Config } from "drizzle-kit";
-export default {
-  out: "./drizzle",
-  driver: "mysql2",
-  schema: "./drizzle/schema.ts",
-  dbCredentials: {
-    uri: 'mysql://3lo1vh2evl3yocuwkic8:pscale_pw_jihvgSIsVMGLwr2Z2HR0m0sg27s9KRrdcmCAuiBNUzP@aws.connect.psdb.cloud/main?ssl={"rejectUnauthorized":true}',
+import { defineConfig } from "drizzle-kit";
+
+export default defineConfig({
+  schema: "./db/schema.ts",
+  out: "./db/generated",
+  introspect: {
+    casing: "camel",
   },
-} satisfies Config;
+  driver: "pg",
+  dbCredentials: {
+    connectionString: process.env.DATABASE_URL!,
+  },
+});

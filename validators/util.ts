@@ -1,11 +1,12 @@
-export type Empty = Record<string, never>;
-export function is_empty<T>(obj: T | Empty): obj is Empty {
-  return typeof obj === "object" && obj !== null && Object.keys(obj).length === 0;
-}
+import type { z } from "zod";
 
-export function is_array<T>(x: T | T[]): x is T[] {
-  return Array.isArray(x);
-}
+export const digits = (s: z.ZodString) =>
+  s
+    .regex(/^\d+$/, { message: "Must be a string of digits" })
+    .transform((s) => s as `${number}`);
+
+export const alphabetic = (s: z.ZodString) =>
+  s.regex(/^[A-Za-z]+$/, { message: "Must be a string of letters" });
 
 export function day_to_num(days: string) {
   let tot = 0;

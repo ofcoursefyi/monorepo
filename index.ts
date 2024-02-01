@@ -1,51 +1,232 @@
-import { cast_course_api, cast_section_api, fetch_courses } from "./api/courses";
-import { courses, instructors, sec_instrs, sections } from "./drizzle/schema";
-import { db } from "./drizzle/db";
+import { db, db_client } from "./db/client";
+import { get } from "./api/fetch";
+import { sql } from "drizzle-orm";
+import {
+  test_cs_and_sections_to_db,
+  test_depts_to_db,
+  test_term_to_db,
+} from "./db/feed";
+import {
+  courses,
+  departments,
+  instructors,
+  sdetails,
+  sections,
+  sinstructors,
+} from "./db/schema";
 
-async function main() {
-  const term = ["20241", "SP24"];
+// PREAMBLE
+const term = "20241";
 
-  const courses_from_dept = (await fetch_courses("BUAD", term[0])).filter(c => c.IsCrossListed === "N");
+const api_deps = await get.departments(term);
+console.log("Got all departments");
 
-  const new_courses = courses_from_dept.map(c => cast_course_api(c, term[1]));
-  const new_course_secs = courses_from_dept.map(c => cast_section_api(c, term[1]));
-
-  const c = await db.insert(courses).values(new_courses);
-  console.log(c);
-
-  const new_secs = new_course_secs.flatMap(s => s.secs);
-  const new_sec_instrs = new_course_secs.flatMap(s => s.prof_to_sec);
-
-  const s = await db.insert(sections).values(new_secs);
-  console.log(s);
-
-  let all = new Map();
-  (await db.query.instructors.findMany()).forEach(i => all.set(i.name, i));
-
-  const to_add = [];
-  for (const [s, si] of new_sec_instrs) {
-    const name = si.first_name + " " + si.last_name;
-    if (all.has(name)) continue;
-    to_add.push({ name });
-    all.set(name, null);
-  }
-
-  const i = await db.insert(instructors).values(to_add);
-  console.log(i);
-
-  all = new Map();
-  (await db.query.instructors.findMany()).forEach(i => all.set(i.name, i));
-
-  const to_add_si = [];
-  for (const [s, si] of new_sec_instrs) {
-    const name = si.first_name + " " + si.last_name;
-    if (!all.has(name)) throw new Error("instructor not found");
-
-    to_add_si.push({ sec: s, instr: all.get(name).id, term: term[1] });
-  }
-
-  const si = await db.insert(sec_instrs).values(to_add_si);
-  console.log(si);
+async function settle<T>(values: Promise<T>[]) {
+  return (await Promise.allSettled(values)).reduce<{
+    result: T[];
+    errs: unknown[];
+  }>(
+    (acc, curr) => {
+      if (curr.status === "fulfilled") acc.result.push(curr.value);
+      else acc.errs.push(curr.reason);
+      return acc;
+    },
+    {
+      result: [],
+      errs: [],
+    },
+  );
 }
 
-main();
+const { result: api_courses, errs } = await settle(
+  api_deps.map((dep) => get.courses(term, dep.code)),
+);
+if (!errs.length) console.log("Got all courses");
+else {
+  console.error(errs);
+  process.exit(1);
+}
+
+const xs = test_cs_and_sections_to_db(
+  test_term_to_db(term),
+  api_courses.flat(),
+);
+
+function batch<T>(arr: T[], size: number) {
+  const batches: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    batches.push(arr.slice(i, i + size));
+  }
+  return batches;
+}
+
+// MAIN
+await db
+  .insert(departments)
+  .values(
+    test_depts_to_db(api_deps).map((d) => ({
+      ...d,
+      updatedAt: new Date().toISOString(),
+    })),
+  )
+  .onConflictDoUpdate({
+    target: [departments.code],
+    set: { name: sql`EXCLUDED.name`, updatedAt: sql`EXCLUDED.updated_at` },
+  });
+console.log("Upserted all departments");
+
+await db
+  .insert(courses)
+  .values(xs.map((x) => ({ ...x.course, updatedAt: new Date().toISOString() })))
+  .onConflictDoUpdate({
+    target: [courses.term, courses.course],
+    set: {
+      coreq: sql`EXCLUDED.coreq`,
+      desc: sql`EXCLUDED.desc`,
+      prereq: sql`EXCLUDED.prereq`,
+      restrClass: sql`EXCLUDED.restr_class`,
+      restrMajor: sql`EXCLUDED.restr_major`,
+      restrSchool: sql`EXCLUDED.restr_school`,
+      sequence: sql`EXCLUDED.sequence`,
+      suffix: sql`EXCLUDED.suffix`,
+      title: sql`EXCLUDED.title`,
+      unitsHigh: sql`EXCLUDED.units_high`,
+      unitsLow: sql`EXCLUDED.units_low`,
+      unitsMax: sql`EXCLUDED.units_max`,
+      updatedAt: sql`EXCLUDED.updated_at`,
+    },
+  });
+console.log("Upserted all courses");
+
+for (const s of batch(
+  xs.flatMap((x) => x.sec),
+  4000,
+)) {
+  await db
+    .insert(sections)
+    .values(
+      s.map((s) => ({
+        course: s.course,
+        dcode: s.dcode,
+        desc: s.desc,
+        notes: s.notes,
+        secTitle: s.sec_title,
+        session: s.session,
+        takenSeats: s.taken_seats,
+        title: s.title,
+        totSeats: s.tot_seats,
+        type: s.type,
+        unitsHigh: s.units_high,
+        unitsLow: s.units_low,
+        term: s.term,
+        section: s.section,
+        cancelled: s.cancelled,
+        updatedAt: new Date().toISOString(),
+      })),
+    )
+    .onConflictDoUpdate({
+      target: [sections.term, sections.section],
+      set: {
+        cancelled: sql`EXCLUDED.cancelled`,
+        dcode: sql`EXCLUDED.dcode`,
+        session: sql`EXCLUDED.session`,
+        type: sql`EXCLUDED.type`,
+        updatedAt: sql`EXCLUDED.updated_at`,
+        course: sql`EXCLUDED.course`,
+        desc: sql`EXCLUDED.desc`,
+        notes: sql`EXCLUDED.notes`,
+        secTitle: sql`EXCLUDED.sec_title`,
+        takenSeats: sql`EXCLUDED.taken_seats`,
+        title: sql`EXCLUDED.title`,
+        totSeats: sql`EXCLUDED.tot_seats`,
+        unitsLow: sql`EXCLUDED.units_low`,
+        unitsHigh: sql`EXCLUDED.units_high`,
+      },
+    });
+  console.log("Upserted a batch of sections");
+}
+console.log("Upserted all sections");
+
+for (const sd of batch(
+  xs.flatMap((x) => x.details),
+  4000,
+)) {
+  await db
+    .insert(sdetails)
+    .values(
+      sd.map((sd) => ({
+        id: sd.id,
+        section: sd.section,
+        term: sd.term,
+        day: sd.day,
+        loc: sd.loc,
+        endTime: sd.end_time,
+        startTime: sd.start_time,
+        updatedAt: new Date().toISOString(),
+      })),
+    )
+    .onConflictDoUpdate({
+      target: [sdetails.term, sdetails.section, sdetails.id],
+      set: {
+        day: sql`EXCLUDED.day`,
+        endTime: sql`EXCLUDED.end_time`,
+        loc: sql`EXCLUDED.loc`,
+        startTime: sql`EXCLUDED.start_time`,
+        updatedAt: sql`EXCLUDED.updated_at`,
+      },
+    });
+  console.log("Upserted a batch of sdetails");
+}
+console.log("Upserted all sdetails");
+
+for (const si of batch(
+  xs.flatMap((x) => x.instrs),
+  4000,
+)) {
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(instructors)
+      .values(
+        si.map((si) => ({
+          name: si.instr_name,
+          id: si.instr_id,
+        })),
+      )
+      .onConflictDoNothing({
+        target: [instructors.name],
+      });
+    console.log("Upserted a batch of instructors");
+
+    const i_map = new Map(
+      (
+        await tx
+          .select({ id: instructors.id, name: instructors.name })
+          .from(instructors)
+      ).map((i) => [i.name, i.id]),
+    );
+
+    await tx
+      .insert(sinstructors)
+      .values(
+        si.map((si) => ({
+          instrId: i_map.get(si.instr_name)!,
+          sec: si.sec,
+          term: si.term,
+          instrName: si.instr_name,
+          updatedAt: new Date().toISOString(),
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [sinstructors.term, sinstructors.instrName, sinstructors.sec],
+        set: {
+          updatedAt: sql`EXCLUDED.updated_at`,
+        },
+      });
+  });
+  console.log("Upserted a batch of sinstructors");
+}
+console.log("Upserted all instructors");
+console.log("Upserted all sinstructors");
+console.log("Finished");
+
+await db_client.end();
