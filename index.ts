@@ -1,10 +1,21 @@
+import { db, db_client } from "./db/client";
+import { get } from "./api/fetch";
+import { sql } from "drizzle-orm";
 import {
   test_cs_and_sections_to_db,
   test_depts_to_db,
   test_term_to_db,
 } from "./db/feed";
-import { get } from "./api/fetch";
+import {
+  courses,
+  departments,
+  instructors,
+  sdetails,
+  sections,
+  sinstructors,
+} from "./db/schema";
 
+// PREAMBLE
 const term = "20241";
 
 const api_deps = await get.departments(term);
@@ -41,28 +52,15 @@ const xs = test_cs_and_sections_to_db(
   api_courses.flat(),
 );
 
-// UPDATE EXISTING
-import { drizzle } from "drizzle-orm/postgres-js";
-// import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
+function batch<T>(arr: T[], size: number) {
+  const batches: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    batches.push(arr.slice(i, i + size));
+  }
+  return batches;
+}
 
-import { neon } from "@neondatabase/serverless";
-import postgres from "postgres";
-
-// const queryClient = neon(process.env.DRIZZLE_DATABASE_URL!);
-const queryClient = postgres(process.env.DRIZZLE_DATABASE_URL!);
-
-const db = drizzle(queryClient, { logger: false });
-
-import {
-  courses,
-  departments,
-  instructors,
-  sdetails,
-  sections,
-  sinstructors,
-} from "./db/schema";
-
+// MAIN
 await db
   .insert(departments)
   .values(
@@ -231,12 +229,4 @@ console.log("Upserted all instructors");
 console.log("Upserted all sinstructors");
 console.log("Finished");
 
-// await queryClient.end();
-
-function batch<T>(arr: T[], size: number) {
-  const batches: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    batches.push(arr.slice(i, i + size));
-  }
-  return batches;
-}
+await db_client.end();
