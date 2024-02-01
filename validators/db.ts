@@ -4,7 +4,7 @@ import { z } from "zod";
 const department = {
   code: alphabetic(z.string().min(2).max(4)),
   name: z.string().min(2),
-} satisfies Zodify<typeof Departments>;
+};
 
 const util = {
   number: digits(z.string().length(3)),
@@ -36,7 +36,8 @@ const util = {
         digits(z.string().max(2)).pipe(z.coerce.number().min(0).max(59)),
       ]),
     )
-    .transform(([h, m]) => `${h}:${m}` as const),
+    .transform(([h, m]) => new Date(1970, 0, 1, h, m))
+    .or(z.date()),
 };
 
 const course = {
@@ -80,13 +81,13 @@ const course = {
   restr_school: z.string().nullable(),
   coreq: z.string().nullable(),
   prereq: z.string().nullable(),
-} satisfies Zodify<typeof Courses>;
+};
 
 const instructor = {
-  id: z.string().length(15),
+  id: z.string().length(21),
   name: z.string(),
   email: z.string().email().nullable(),
-} satisfies Zodify<typeof Instructors>;
+};
 
 const section = {
   term: course.term,
@@ -104,7 +105,7 @@ const section = {
   notes: z.string().nullable(),
   units_low: util.units.nullable(),
   units_high: util.units.nullable(),
-} satisfies Zodify<typeof Sections>;
+};
 
 const s_detail = {
   term: section.term,
@@ -113,14 +114,14 @@ const s_detail = {
   start_time: util.time.nullable(),
   end_time: util.time.nullable(),
   loc: z.string().max(50).nullable(),
-} satisfies Zodify<typeof SDetails>;
+};
 
 const s_instr = {
   term: section.term,
   sec: section.section,
   instr_id: instructor.id,
   instr_name: instructor.name,
-} satisfies Zodify<typeof SInstructors>;
+};
 
 export const verify = {
   dept: z.object(department),
