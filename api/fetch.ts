@@ -14,13 +14,19 @@ export const get = {
     const res = await fetch(`${URL}/departments/${term}`);
     if (!res.ok) throw new Error("Failed to fetch departments");
 
-    return verify.departments.parse(await res.json());
+    return verify.departments
+      .parse(await res.json())
+      .filter((d) => !["SWKO", "SWKC"].includes(d.code))
+      .concat({ code: "SOWK", name: "Social Work", type: "N" });
   },
 
   courses: async (term: string, dep: string) => {
     const res = await fetch(`${URL}/classes/${dep}/${term}`);
     if (!res.ok) throw new Error(`Failed to fetch courses for ${dep} ${term}`);
 
-    return verify.courses.parse(await res.json()).OfferedCourses.course; // make so that not null or undefined
+    const ret = verify.courses.parse(await res.json()).OfferedCourses.course;
+    if (!ret) throw new Error(`No courses found for ${dep} ${term}`);
+
+    return ret;
   },
 };

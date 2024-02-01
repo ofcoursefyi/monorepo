@@ -4,12 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "db push": "prisma db push"
+    "push": "prisma db push"
   },
   "devDependencies": {
     "bun-types": "^0.6.0",
+    "prettier": "^3.2.4",
     "prisma": "^5.8.1",
-    "prettier": "^3.2.4"
+    "radash": "^11.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.3.3"
@@ -18,7 +19,8 @@
     "@prisma/client": "^5.8.1",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
-    "nanoid": "^5.0.4"
+    "nanoid": "^5.0.4",
+    "string-ts": "^2.0.0"
   },
   "prisma": {
     "schema": "db/schema.prisma"
