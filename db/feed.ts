@@ -1,14 +1,21 @@
-import { verify as db } from "../validators/db";
+import { verify as db, db as u } from "../validators/db";
 import type { get } from "../api/fetch";
 import { nanoid } from "nanoid";
 import type { z } from "zod";
 import { zip } from "radash";
 
+// TERM
+type T_API_RESPONSE = `${number}`;
+
+export function test_term_to_db(t: T_API_RESPONSE) {
+  return u.util.convert_term.parse(t);
+}
+
 // DEPT
 type D_API_RESPONSE = Awaited<ReturnType<typeof get.departments>>;
 type D_DB = z.infer<typeof db.dept>;
 
-export async function test_depts_to_db(ds: D_API_RESPONSE) {
+export function test_depts_to_db(ds: D_API_RESPONSE) {
   return ds.map((d) =>
     db.dept.parse({ code: d.code, name: d.name } satisfies D_DB),
   );
@@ -23,7 +30,7 @@ type S_DB = z.infer<typeof db.section>;
 type S_DETAIL_DB = z.infer<typeof db.s_detail>;
 type S_INSTR_DB = z.infer<typeof db.s_instr>;
 
-export async function test_cs_and_sections_to_db(
+export function test_cs_and_sections_to_db(
   term: C_DB["term"],
   cs: C_API_RESPONSE,
 ) {
@@ -71,8 +78,9 @@ export async function test_cs_and_sections_to_db(
 
     const details = ss.flatMap((s) =>
       zip(s.day, s.start_time, s.end_time, s.location).map(
-        ([day, start_time, end_time, loc]) =>
+        ([day, start_time, end_time, loc], idx) =>
           db.s_detail.parse({
+            id: idx,
             term,
             section: s.id,
             day,

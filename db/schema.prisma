@@ -113,6 +113,7 @@ model Sections {
 }
 
 model SDetails {
+  id      Int    @default(autoincrement())
   term    String @db.VarChar(4)
   section String @db.VarChar(5)
 
@@ -125,7 +126,7 @@ model SDetails {
 
   sections Sections @relation(fields: [section, term], references: [section, term], onDelete: Cascade, onUpdate: Restrict)
 
-  @@id([section, term])
+  @@id([section, term, id])
   @@index([term])
   @@index([day])
   @@index([end_time])

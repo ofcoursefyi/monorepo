@@ -7,6 +7,14 @@ const department = {
 };
 
 const util = {
+  convert_term: digits(z.string().length(5))
+    .transform((s) => [s.slice(2, 4), s.slice(4, 5)])
+    .pipe(z.tuple([digits(z.string()), z.coerce.number().min(1).max(3)]))
+    .transform(([y, t]) =>
+      t === 1 ? (`SP${y}` as const)
+      : t === 2 ? (`SU${y}` as const)
+      : (`FA${y}` as const),
+    ),
   number: digits(z.string().length(3)),
   sequence: alphabetic(z.string().length(1)),
   units: z
@@ -36,8 +44,7 @@ const util = {
         digits(z.string().max(2)).pipe(z.coerce.number().min(0).max(59)),
       ]),
     )
-    .transform(([h, m]) => new Date(1970, 0, 1, h, m))
-    .or(z.date()),
+    .transform(([h, m]) => `${h}:${m}` as const),
 };
 
 const course = {
@@ -108,6 +115,7 @@ const section = {
 };
 
 const s_detail = {
+  id: z.number().min(0),
   term: section.term,
   section: section.section,
   day: z.number().min(1).max(127).nullable(),
