@@ -1,4 +1,5 @@
 import { alphabetic, digits, day_to_num } from "./util";
+import { toLowerCase, replace } from "string-ts";
 import { db } from "./db";
 import { z } from "zod";
 
@@ -72,9 +73,7 @@ const units = z
 const section = {
   id: db.section.section,
   session: db.section.session,
-  dclass_code: z
-    .enum(["R", "D"])
-    .transform((c) => c.toLowerCase() as Lowercase<typeof c>),
+  dclass_code: z.enum(["R", "D"]).transform((c) => toLowerCase(c)),
   title: db.section.title,
   section_title: db.section.sec_title.or(empty_object),
   description: db.section.desc.or(empty_object),
@@ -82,7 +81,7 @@ const section = {
   type: z
     .enum(["Lec", "Dis", "Lab", "Lec-Dis", "Qz", "Lec-Lab"])
     .transform((c) =>
-      c === "Qz" ? "quiz" : (c.toLowerCase() as Lowercase<typeof c>),
+      c === "Qz" ? "quiz" : toLowerCase(replace(c, "-", "_")),
     ),
   units: units.or(empty_object),
   spaces_available: digits(z.string()),

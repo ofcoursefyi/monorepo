@@ -1,20 +1,20 @@
-import { type Zodify, alphabetic, digits } from "./util";
+import { alphabetic, digits } from "./util";
 import { z } from "zod";
-import type {
-  Courses,
-  Departments,
-  Sections,
-  Instructors,
-  SDetails,
-  SInstructors,
-} from "../db/drizzle/schema";
 
 const department = {
   code: alphabetic(z.string().min(2).max(4)),
   name: z.string().min(2),
-} satisfies Zodify<typeof Departments>;
+};
 
 const util = {
+  convert_term: digits(z.string().length(5))
+    .transform((s) => [s.slice(2, 4), s.slice(4, 5)])
+    .pipe(z.tuple([digits(z.string()), z.coerce.number().min(1).max(3)]))
+    .transform(([y, t]) =>
+      t === 1 ? (`SP${y}` as const)
+      : t === 2 ? (`SU${y}` as const)
+      : (`FA${y}` as const),
+    ),
   number: digits(z.string().length(3)),
   sequence: alphabetic(z.string().length(1)),
   units: z
@@ -88,13 +88,13 @@ const course = {
   restr_school: z.string().nullable(),
   coreq: z.string().nullable(),
   prereq: z.string().nullable(),
-} satisfies Zodify<typeof Courses>;
+};
 
 const instructor = {
-  id: z.string().length(15),
+  id: z.string().length(21),
   name: z.string(),
   email: z.string().email().nullable(),
-} satisfies Zodify<typeof Instructors>;
+};
 
 const section = {
   term: course.term,
@@ -112,23 +112,24 @@ const section = {
   notes: z.string().nullable(),
   units_low: util.units.nullable(),
   units_high: util.units.nullable(),
-} satisfies Zodify<typeof Sections>;
+};
 
 const s_detail = {
+  id: z.number().min(0),
   term: section.term,
   section: section.section,
   day: z.number().min(1).max(127).nullable(),
   start_time: util.time.nullable(),
   end_time: util.time.nullable(),
   loc: z.string().max(50).nullable(),
-} satisfies Zodify<typeof SDetails>;
+};
 
 const s_instr = {
   term: section.term,
   sec: section.section,
   instr_id: instructor.id,
   instr_name: instructor.name,
-} satisfies Zodify<typeof SInstructors>;
+};
 
 export const verify = {
   dept: z.object(department),

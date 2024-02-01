@@ -1,14 +1,13 @@
-import type { Config } from "drizzle-kit";
+import { defineConfig } from "drizzle-kit";
 
-export default {
-  out: "./db/drizzle",
-  schema: "./db/drizzle/schema.ts",
+export default defineConfig({
+  schema: "./db/schema.ts",
+  out: "./db/generated",
+  introspect: {
+    casing: "camel",
+  },
   driver: "pg",
   dbCredentials: {
-    connectionString:
-      "postgresql://brendonzimmer:1lfdsjgenp7N@ep-odd-mode-78833880-pooler.us-west-2.aws.neon.tech/main?sslmode=require",
+    connectionString: process.env.DATABASE_URL!,
   },
-  introspect: {
-    casing: "preserve",
-  },
-} satisfies Config;
+});

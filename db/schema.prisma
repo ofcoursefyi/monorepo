@@ -5,11 +5,14 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 model Departments {
   code String @id @db.VarChar(4)
   name String
+
+  updated_at DateTime @updatedAt
 
   courses Courses[]
 
@@ -40,6 +43,8 @@ model Courses {
   prereq String?
   coreq  String?
 
+  updated_at DateTime @updatedAt
+
   depts    Departments @relation(fields: [dept], references: [code])
   sections Sections[]
 
@@ -49,13 +54,13 @@ model Courses {
 }
 
 model Instructors {
-  id    String  @id @db.VarChar(15)
-  name  String
+  id    String  @db.VarChar(21)
+  name  String  @id
   email String? @unique
 
   section_instructors SInstructors[]
 
-  @@unique([id, name])
+  @@unique([name, id])
   @@index([name])
 }
 
@@ -94,6 +99,8 @@ model Sections {
   units_low  Decimal? @db.Decimal(3, 1)
   units_high Decimal? @db.Decimal(3, 1)
 
+  updated_at DateTime @updatedAt
+
   section_infos       SDetails[]
   section_instructors SInstructors[]
   courses             Courses        @relation(fields: [term, course], references: [term, course], onUpdate: Restrict)
@@ -106,6 +113,7 @@ model Sections {
 }
 
 model SDetails {
+  id      Int    @default(autoincrement())
   term    String @db.VarChar(4)
   section String @db.VarChar(5)
 
@@ -114,9 +122,11 @@ model SDetails {
   end_time   DateTime? @db.Time(0)
   loc        String?
 
+  updated_at DateTime @updatedAt
+
   sections Sections @relation(fields: [section, term], references: [section, term], onDelete: Cascade, onUpdate: Restrict)
 
-  @@id([section, term])
+  @@id([section, term, id])
   @@index([term])
   @@index([day])
   @@index([end_time])
@@ -126,13 +136,15 @@ model SDetails {
 model SInstructors {
   term       String @db.VarChar(4)
   sec        String @db.VarChar(5)
-  instr_id   String @db.VarChar(15)
+  instr_id   String @db.VarChar(21)
   instr_name String
 
-  instructors Instructors @relation(fields: [instr_id, instr_name], references: [id, name])
+  updated_at DateTime @updatedAt
+
+  instructors Instructors @relation(fields: [instr_name, instr_id], references: [name, id])
   sections    Sections    @relation(fields: [term, sec], references: [term, section], onDelete: Cascade, onUpdate: Restrict)
 
-  @@id([term, instr_id, sec])
+  @@id([term, instr_name, sec])
   @@index([sec])
   @@index([instr_id])
 }
