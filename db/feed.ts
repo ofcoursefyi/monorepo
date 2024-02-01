@@ -19,9 +19,6 @@ type C_API_RESPONSE = Awaited<ReturnType<typeof get.courses>>;
 type C_DB = z.infer<typeof db.course>;
 
 // SECTION
-type S_API_RESPONSE = Awaited<
-  ReturnType<typeof get.courses>
->[number]["CourseData"]["SectionData"];
 type S_DB = z.infer<typeof db.section>;
 type S_DETAIL_DB = z.infer<typeof db.s_detail>;
 type S_INSTR_DB = z.infer<typeof db.s_instr>;
