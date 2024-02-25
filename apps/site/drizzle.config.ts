@@ -1,6 +1,5 @@
 import { type Config } from "drizzle-kit";
-
-import { env } from "~/env";
+import { env } from "@ofc/env";
 
 export default {
   schema: "./src/server/db/schema.ts",
@@ -8,5 +7,4 @@ export default {
   dbCredentials: {
     connectionString: env.DATABASE_URL,
   },
-  tablesFilter: ["site_*"],
 } satisfies Config;

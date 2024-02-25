@@ -2,6 +2,7 @@
   "name": "ofc",
   "private": "true",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ]
 }
