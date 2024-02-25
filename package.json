@@ -1,0 +1,7 @@
+{
+  "name": "ofc",
+  "private": "true",
+  "workspaces": [
+    "packages/*"
+  ]
+}
