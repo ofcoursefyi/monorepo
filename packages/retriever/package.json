@@ -1,0 +1,15 @@
+{
+  "name": "@ofc/retriever",
+  "type": "module",
+  "devDependencies": {
+    "zod": "^3.22.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    ".": "./src/fetch.ts",
+    "./parse": "./src/validate.ts",
+    "./test": "./src/test.ts"
+  }
+}

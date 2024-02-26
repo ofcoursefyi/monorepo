@@ -1,9 +1,26 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDotEnv": [".env"],
   "pipeline": {
-    "dev": {
+    // @ofc/schema
+    "db:push:u": {
       "cache": false,
       "persistent": true
+    },
+    "db:push:p": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    },
+
+    // @ofc/updater
+    "update": {
+      "cache": false
     }
+
+    // @ofc/site
   }
 }

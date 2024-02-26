@@ -1,0 +1,17 @@
+{
+  "name": "@ofc/transformer",
+  "type": "module",
+  "devDependencies": {
+    "@ofc/retriever": "workspace:*",
+    "nanoid": "^5.0.6",
+    "radash": "^12.0.0",
+    "zod": "^3.22.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    ".": "./src/transform.ts",
+    "./parse": "./src/validate.ts"
+  }
+}

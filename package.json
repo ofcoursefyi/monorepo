@@ -4,5 +4,14 @@
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "dependencies": {
+    "turbo": "^1.12.4"
+  },
+  "scripts": {
+    "db:studio": "turbo db:studio --filter @ofc/schema",
+    "db:push:p": "turbo db:push:p --filter @ofc/schema",
+    "db:push:u": "turbo db:push:u --filter @ofc/schema",
+    "update": "turbo update --filter @ofc/updater"
+  }
 }

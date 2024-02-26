@@ -1,0 +1,20 @@
+{
+  "name": "@ofc/schema",
+  "type": "module",
+  "scripts": {
+    "db:studio": "drizzle-kit studio",
+    "db:push:u": "prisma db push --schema src/usc-schema.prisma",
+    "db:push:p": "prisma db push --schema src/platform-schema.prisma"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@ofc/env": "workspace:*",
+    "drizzle-kit": "^0.20.14",
+    "prisma": "^5.10.2"
+  },
+  "exports": {
+    "./usc": "./src/usc-schema.ts"
+  }
+}

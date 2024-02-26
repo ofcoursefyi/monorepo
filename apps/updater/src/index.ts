@@ -1,11 +1,7 @@
-import { db, db_client } from "./db/client";
-import { get } from "./api/fetch";
+import { transform } from "@ofc/transformer";
+import { db, db_client } from "./client";
+import { get } from "@ofc/retriever";
 import { sql } from "drizzle-orm";
-import {
-  test_cs_and_sections_to_db,
-  test_depts_to_db,
-  test_term_to_db,
-} from "./db/feed";
 import {
   courses,
   departments,
@@ -13,10 +9,11 @@ import {
   sdetails,
   sections,
   sinstructors,
-} from "./db/schema";
+} from "@ofc/schema/usc";
 
 // PREAMBLE
 const term = "20241";
+// 20231 not working for SINSTRUCTORS
 
 const api_deps = await get.departments(term);
 console.log("Got all departments");
@@ -34,12 +31,12 @@ async function settle<T>(values: Promise<T>[]) {
     {
       result: [],
       errs: [],
-    },
+    }
   );
 }
 
 const { result: api_courses, errs } = await settle(
-  api_deps.map((dep) => get.courses(term, dep.code)),
+  api_deps.map(dep => get.courses(term, dep.code))
 );
 if (!errs.length) console.log("Got all courses");
 else {
@@ -47,10 +44,7 @@ else {
   process.exit(1);
 }
 
-const xs = test_cs_and_sections_to_db(
-  test_term_to_db(term),
-  api_courses.flat(),
-);
+const xs = transform.courses(transform.term(term), api_courses.flat());
 
 function batch<T>(arr: T[], size: number) {
   const batches: T[][] = [];
@@ -61,13 +55,16 @@ function batch<T>(arr: T[], size: number) {
 }
 
 // MAIN
+// new idea: upsert all sections, sdetails, and sinstructors
+// - in a single transaction
+// - delete all sections, sdetails, and sinstructors with a updatedAt < latestUpdatedAt
 await db
   .insert(departments)
   .values(
-    test_depts_to_db(api_deps).map((d) => ({
+    transform.departments(api_deps).map(d => ({
       ...d,
       updatedAt: new Date().toISOString(),
-    })),
+    }))
   )
   .onConflictDoUpdate({
     target: [departments.code],
@@ -77,7 +74,7 @@ console.log("Upserted all departments");
 
 await db
   .insert(courses)
-  .values(xs.map((x) => ({ ...x.course, updatedAt: new Date().toISOString() })))
+  .values(xs.map(x => ({ ...x.course, updatedAt: new Date().toISOString() })))
   .onConflictDoUpdate({
     target: [courses.term, courses.course],
     set: {
@@ -93,19 +90,34 @@ await db
       unitsHigh: sql`EXCLUDED.units_high`,
       unitsLow: sql`EXCLUDED.units_low`,
       unitsMax: sql`EXCLUDED.units_max`,
-      updatedAt: sql`EXCLUDED.updated_at`,
+      updatedAt: sql`CASE 
+        WHEN ${courses.coreq} IS DISTINCT FROM EXCLUDED.coreq
+          OR ${courses.desc} IS DISTINCT FROM EXCLUDED.desc
+          OR ${courses.prereq} IS DISTINCT FROM EXCLUDED.prereq
+          OR ${courses.restrClass} IS DISTINCT FROM EXCLUDED.restr_class
+          OR ${courses.restrMajor} IS DISTINCT FROM EXCLUDED.restr_major
+          OR ${courses.restrSchool} IS DISTINCT FROM EXCLUDED.restr_school
+          OR ${courses.sequence} IS DISTINCT FROM EXCLUDED.sequence
+          OR ${courses.suffix} IS DISTINCT FROM EXCLUDED.suffix
+          OR ${courses.title} IS DISTINCT FROM EXCLUDED.title
+          OR ${courses.unitsHigh} IS DISTINCT FROM EXCLUDED.units_high
+          OR ${courses.unitsLow} IS DISTINCT FROM EXCLUDED.units_low
+          OR ${courses.unitsMax} IS DISTINCT FROM EXCLUDED.units_max
+        THEN EXCLUDED.updated_at
+        ELSE ${courses.updatedAt}
+        END`,
     },
   });
 console.log("Upserted all courses");
 
 for (const s of batch(
-  xs.flatMap((x) => x.sec),
-  4000,
+  xs.flatMap(x => x.sections),
+  4000
 )) {
   await db
     .insert(sections)
     .values(
-      s.map((s) => ({
+      s.map(s => ({
         course: s.course,
         dcode: s.dcode,
         desc: s.desc,
@@ -122,7 +134,7 @@ for (const s of batch(
         section: s.section,
         cancelled: s.cancelled,
         updatedAt: new Date().toISOString(),
-      })),
+      }))
     )
     .onConflictDoUpdate({
       target: [sections.term, sections.section],
@@ -131,7 +143,6 @@ for (const s of batch(
         dcode: sql`EXCLUDED.dcode`,
         session: sql`EXCLUDED.session`,
         type: sql`EXCLUDED.type`,
-        updatedAt: sql`EXCLUDED.updated_at`,
         course: sql`EXCLUDED.course`,
         desc: sql`EXCLUDED.desc`,
         notes: sql`EXCLUDED.notes`,
@@ -141,6 +152,23 @@ for (const s of batch(
         totSeats: sql`EXCLUDED.tot_seats`,
         unitsLow: sql`EXCLUDED.units_low`,
         unitsHigh: sql`EXCLUDED.units_high`,
+        updatedAt: sql`CASE 
+        WHEN ${sections.cancelled} IS DISTINCT FROM EXCLUDED.cancelled
+          OR ${sections.dcode} IS DISTINCT FROM EXCLUDED.dcode
+          OR ${sections.session} IS DISTINCT FROM EXCLUDED.session
+          OR ${sections.type} IS DISTINCT FROM EXCLUDED.type
+          OR ${sections.course} IS DISTINCT FROM EXCLUDED.course
+          OR ${sections.desc} IS DISTINCT FROM EXCLUDED.desc
+          OR ${sections.notes} IS DISTINCT FROM EXCLUDED.notes
+          OR ${sections.secTitle} IS DISTINCT FROM EXCLUDED.sec_title
+          OR ${sections.takenSeats} IS DISTINCT FROM EXCLUDED.taken_seats
+          OR ${sections.title} IS DISTINCT FROM EXCLUDED.title
+          OR ${sections.totSeats} IS DISTINCT FROM EXCLUDED.tot_seats
+          OR ${sections.unitsLow} IS DISTINCT FROM EXCLUDED.units_low
+          OR ${sections.unitsHigh} IS DISTINCT FROM EXCLUDED.units_high
+        THEN EXCLUDED.updated_at
+        ELSE ${sections.updatedAt}
+        END`,
       },
     });
   console.log("Upserted a batch of sections");
@@ -148,13 +176,13 @@ for (const s of batch(
 console.log("Upserted all sections");
 
 for (const sd of batch(
-  xs.flatMap((x) => x.details),
-  4000,
+  xs.flatMap(x => x.details),
+  4000
 )) {
   await db
     .insert(sdetails)
     .values(
-      sd.map((sd) => ({
+      sd.map(sd => ({
         id: sd.id,
         section: sd.section,
         term: sd.term,
@@ -163,7 +191,7 @@ for (const sd of batch(
         endTime: sd.end_time,
         startTime: sd.start_time,
         updatedAt: new Date().toISOString(),
-      })),
+      }))
     )
     .onConflictDoUpdate({
       target: [sdetails.term, sdetails.section, sdetails.id],
@@ -180,17 +208,17 @@ for (const sd of batch(
 console.log("Upserted all sdetails");
 
 for (const si of batch(
-  xs.flatMap((x) => x.instrs),
-  4000,
+  xs.flatMap(x => x.instrs),
+  4000
 )) {
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     await tx
       .insert(instructors)
       .values(
-        si.map((si) => ({
+        si.map(si => ({
           name: si.instr_name,
           id: si.instr_id,
-        })),
+        }))
       )
       .onConflictDoNothing({
         target: [instructors.name],
@@ -202,19 +230,36 @@ for (const si of batch(
         await tx
           .select({ id: instructors.id, name: instructors.name })
           .from(instructors)
-      ).map((i) => [i.name, i.id]),
+      ).map(i => [i.name, i.id])
     );
+
+    // const test = si.map((si) => ({
+    //   instrId: i_map.get(si.instr_name)!,
+    //   sec: si.sec,
+    //   term: si.term,
+    //   instrName: si.instr_name,
+    //   updatedAt: new Date().toISOString(),
+    // }));
+    // const duplicates = test.filter((item, index, self) =>
+    //   self.some(
+    //     (other, otherIndex) =>
+    //       index !== otherIndex &&
+    //       item.instrId === other.instrId &&
+    //       item.sec === other.sec,
+    //   ),
+    // );
+    // console.log(duplicates);
 
     await tx
       .insert(sinstructors)
       .values(
-        si.map((si) => ({
+        si.map(si => ({
           instrId: i_map.get(si.instr_name)!,
           sec: si.sec,
           term: si.term,
           instrName: si.instr_name,
           updatedAt: new Date().toISOString(),
-        })),
+        }))
       )
       .onConflictDoUpdate({
         target: [sinstructors.term, sinstructors.instrName, sinstructors.sec],
@@ -227,6 +272,6 @@ for (const si of batch(
 }
 console.log("Upserted all instructors");
 console.log("Upserted all sinstructors");
-console.log("Finished");
 
 await db_client.end();
+console.log("Finished");

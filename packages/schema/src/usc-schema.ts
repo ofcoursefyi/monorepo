@@ -15,7 +15,6 @@ import {
   boolean,
   numeric,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
 export const dcode = pgEnum("DCODE", ["d", "r"]);
 export const stype = pgEnum("STYPE", [
@@ -27,22 +26,6 @@ export const stype = pgEnum("STYPE", [
   "lec_dis",
 ]);
 
-export const prismaMigrations = pgTable("_prisma_migrations", {
-  id: varchar("id", { length: 36 }).primaryKey().notNull(),
-  checksum: varchar("checksum", { length: 64 }).notNull(),
-  finishedAt: timestamp("finished_at", { withTimezone: true, mode: "string" }),
-  migrationName: varchar("migration_name", { length: 255 }).notNull(),
-  logs: text("logs"),
-  rolledBackAt: timestamp("rolled_back_at", {
-    withTimezone: true,
-    mode: "string",
-  }),
-  startedAt: timestamp("started_at", { withTimezone: true, mode: "string" })
-    .defaultNow()
-    .notNull(),
-  appliedStepsCount: integer("applied_steps_count").default(0).notNull(),
-});
-
 export const departments = pgTable(
   "Departments",
   {
@@ -53,11 +36,11 @@ export const departments = pgTable(
       mode: "string",
     }).notNull(),
   },
-  (table) => {
+  table => {
     return {
       codeIdx: index("Departments_code_idx").on(table.code),
     };
-  },
+  }
 );
 
 export const instructors = pgTable(
@@ -67,12 +50,12 @@ export const instructors = pgTable(
     name: text("name").primaryKey().notNull(),
     email: text("email"),
   },
-  (table) => {
+  table => {
     return {
       emailKey: uniqueIndex("Instructors_email_key").on(table.email),
       nameIdx: index("Instructors_name_idx").on(table.name),
     };
-  },
+  }
 );
 
 export const sinstructors = pgTable(
@@ -87,7 +70,7 @@ export const sinstructors = pgTable(
       mode: "string",
     }).notNull(),
   },
-  (table) => {
+  table => {
     return {
       secIdx: index("SInstructors_sec_idx").on(table.sec),
       instrIdIdx: index("SInstructors_instr_id_idx").on(table.instrId),
@@ -110,7 +93,7 @@ export const sinstructors = pgTable(
         name: "SInstructors_pkey",
       }),
     };
-  },
+  }
 );
 
 export const sdetails = pgTable(
@@ -128,7 +111,7 @@ export const sdetails = pgTable(
     }).notNull(),
     id: serial("id").notNull(),
   },
-  (table) => {
+  table => {
     return {
       termIdx: index("SDetails_term_idx").on(table.term),
       dayIdx: index("SDetails_day_idx").on(table.day),
@@ -146,7 +129,7 @@ export const sdetails = pgTable(
         name: "SDetails_pkey",
       }),
     };
-  },
+  }
 );
 
 export const sections = pgTable(
@@ -172,14 +155,14 @@ export const sections = pgTable(
       mode: "string",
     }).notNull(),
   },
-  (table) => {
+  table => {
     return {
       courseIdx: index("Sections_course_idx").on(table.course),
       dcodeIdx: index("Sections_dcode_idx").on(table.dcode),
       sessionIdx: index("Sections_session_idx").on(table.session),
       termCourseIdx: index("Sections_term_course_idx").on(
         table.term,
-        table.course,
+        table.course
       ),
       sectionsTermCourseFkey: foreignKey({
         columns: [table.term, table.course],
@@ -193,7 +176,7 @@ export const sections = pgTable(
         name: "Sections_pkey",
       }),
     };
-  },
+  }
 );
 
 export const courses = pgTable(
@@ -226,7 +209,7 @@ export const courses = pgTable(
       mode: "string",
     }).notNull(),
   },
-  (table) => {
+  table => {
     return {
       deptIdx: index("Courses_dept_idx").on(table.dept),
       termDeptIdx: index("Courses_term_dept_idx").on(table.term, table.dept),
@@ -235,5 +218,5 @@ export const courses = pgTable(
         name: "Courses_pkey",
       }),
     };
-  },
+  }
 );
