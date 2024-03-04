@@ -1,14 +1,7 @@
-import { type Config } from "tailwindcss";
-import { fontFamily } from "tailwindcss/defaultTheme";
+import type { Config } from "tailwindcss";
+import { shadcn_preset } from "./src/ui/tw-config";
 
 export default {
+  presets: [shadcn_preset],
   content: ["./src/**/*.tsx"],
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
-      },
-    },
-  },
-  plugins: [],
 } satisfies Config;
