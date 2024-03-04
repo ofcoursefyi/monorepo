@@ -24,7 +24,7 @@ export default async function Home() {
                 ? `${c.units_low}-${c.units_high}`
                 : `${c.units_low}`,
             }))}
-            initial_state={{
+            initialState={{
               columnVisibility: {
                 term: false,
                 dept: false,
@@ -34,6 +34,8 @@ export default async function Home() {
                 restr_class: false,
                 restr_major: false,
                 restr_school: false,
+                coreq: false,
+                prereq: false,
               },
             }}
           />

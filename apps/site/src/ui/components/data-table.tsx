@@ -20,20 +20,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/ui/components/table";
-import { Button } from "@/ui/components/button";
+
 import { DataTableViewOptions } from "./data-table-view-options";
 import { DataTablePagination } from "./data-table-pagination";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  initial_state?: InitialTableState;
+  initialState?: InitialTableState;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  initial_state,
+  initialState,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -47,7 +47,7 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
     },
-    initialState: initial_state,
+    initialState,
   });
 
   return (
@@ -105,22 +105,6 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <DataTablePagination table={table} />
-        {/* <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button> */}
       </div>
     </div>
   );
