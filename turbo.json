@@ -16,11 +16,25 @@
       "persistent": true
     },
 
-    // @ofc/updater
+    // updater
     "update": {
       "cache": false
-    }
+    },
 
-    // @ofc/site
+    // site
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "start": {
+      "persistent": true
+    }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@ofc/updater",
+  "name": "updater",
   "module": "./src/index.ts",
   "type": "module",
   "private": true,

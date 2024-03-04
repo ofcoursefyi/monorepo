@@ -12,6 +12,10 @@
     "db:studio": "turbo db:studio --filter @ofc/schema",
     "db:push:p": "turbo db:push:p --filter @ofc/schema",
     "db:push:u": "turbo db:push:u --filter @ofc/schema",
-    "update": "turbo update --filter @ofc/updater"
+    "update": "turbo update --filter updater",
+    "build": "turbo build --filter site",
+    "dev": "turbo dev --filter site",
+    "lint": "turbo lint --filter site",
+    "start": "turbo start --filter site"
   }
 }
