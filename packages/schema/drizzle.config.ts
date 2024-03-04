@@ -5,7 +5,7 @@ export default defineConfig({
   schema: ["./src/usc-schema.ts", "./src/platform-schema.ts"],
   out: "./generated",
   introspect: {
-    casing: "camel",
+    casing: "preserve",
   },
   driver: "pg",
   dbCredentials: { connectionString: env.DATABASE_URL },

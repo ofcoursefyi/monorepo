@@ -4,7 +4,6 @@ import {
   varchar,
   timestamp,
   text,
-  integer,
   index,
   uniqueIndex,
   foreignKey,
@@ -31,7 +30,7 @@ export const departments = pgTable(
   {
     code: varchar("code", { length: 4 }).primaryKey().notNull(),
     name: text("name").notNull(),
-    updatedAt: timestamp("updated_at", {
+    updated_at: timestamp("updated_at", {
       precision: 3,
       mode: "string",
     }).notNull(),
@@ -63,9 +62,9 @@ export const sinstructors = pgTable(
   {
     term: varchar("term", { length: 4 }).notNull(),
     sec: varchar("sec", { length: 5 }).notNull(),
-    instrId: varchar("instr_id", { length: 21 }).notNull(),
-    instrName: text("instr_name").notNull(),
-    updatedAt: timestamp("updated_at", {
+    instr_id: varchar("instr_id", { length: 21 }).notNull(),
+    instr_name: text("instr_name").notNull(),
+    updated_at: timestamp("updated_at", {
       precision: 3,
       mode: "string",
     }).notNull(),
@@ -73,9 +72,9 @@ export const sinstructors = pgTable(
   table => {
     return {
       secIdx: index("SInstructors_sec_idx").on(table.sec),
-      instrIdIdx: index("SInstructors_instr_id_idx").on(table.instrId),
+      instrIdIdx: index("SInstructors_instr_id_idx").on(table.instr_id),
       sinstructorsInstrNameInstrIdFkey: foreignKey({
-        columns: [table.instrName, table.instrId],
+        columns: [table.instr_name, table.instr_id],
         foreignColumns: [instructors.id, instructors.name],
         name: "SInstructors_instr_name_instr_id_fkey",
       })
@@ -89,7 +88,7 @@ export const sinstructors = pgTable(
         .onUpdate("restrict")
         .onDelete("cascade"),
       sinstructorsPkey: primaryKey({
-        columns: [table.term, table.sec, table.instrName],
+        columns: [table.term, table.sec, table.instr_name],
         name: "SInstructors_pkey",
       }),
     };
@@ -102,10 +101,10 @@ export const sdetails = pgTable(
     term: varchar("term", { length: 4 }).notNull(),
     section: varchar("section", { length: 5 }).notNull(),
     day: smallint("day"),
-    startTime: time("start_time"),
-    endTime: time("end_time"),
+    start_time: time("start_time"),
+    end_time: time("end_time"),
     loc: text("loc"),
-    updatedAt: timestamp("updated_at", {
+    updated_at: timestamp("updated_at", {
       precision: 3,
       mode: "string",
     }).notNull(),
@@ -115,8 +114,8 @@ export const sdetails = pgTable(
     return {
       termIdx: index("SDetails_term_idx").on(table.term),
       dayIdx: index("SDetails_day_idx").on(table.day),
-      endTimeIdx: index("SDetails_end_time_idx").on(table.endTime),
-      startTimeIdx: index("SDetails_start_time_idx").on(table.startTime),
+      endTimeIdx: index("SDetails_end_time_idx").on(table.end_time),
+      startTimeIdx: index("SDetails_start_time_idx").on(table.start_time),
       sdetailsSectionTermFkey: foreignKey({
         columns: [table.section, table.term],
         foreignColumns: [sections.term, sections.section],
@@ -142,15 +141,15 @@ export const sections = pgTable(
     dcode: dcode("dcode").notNull(),
     type: stype("type").notNull(),
     cancelled: boolean("cancelled").notNull(),
-    totSeats: smallint("tot_seats").notNull(),
-    takenSeats: smallint("taken_seats").notNull(),
+    tot_seats: smallint("tot_seats").notNull(),
+    taken_seats: smallint("taken_seats").notNull(),
     title: text("title").notNull(),
-    secTitle: text("sec_title"),
+    sec_title: text("sec_title"),
     desc: text("desc"),
     notes: text("notes"),
-    unitsLow: numeric("units_low", { precision: 3, scale: 1 }),
-    unitsHigh: numeric("units_high", { precision: 3, scale: 1 }),
-    updatedAt: timestamp("updated_at", {
+    units_low: numeric("units_low", { precision: 3, scale: 1 }),
+    units_high: numeric("units_high", { precision: 3, scale: 1 }),
+    updated_at: timestamp("updated_at", {
       precision: 3,
       mode: "string",
     }).notNull(),
@@ -196,15 +195,15 @@ export const courses = pgTable(
     suffix: varchar("suffix", { length: 6 }),
     title: text("title").notNull(),
     desc: text("desc"),
-    unitsLow: numeric("units_low", { precision: 3, scale: 1 }),
-    unitsHigh: numeric("units_high", { precision: 3, scale: 1 }),
-    unitsMax: numeric("units_max", { precision: 3, scale: 1 }),
-    restrMajor: text("restr_major"),
-    restrClass: text("restr_class"),
-    restrSchool: text("restr_school"),
+    units_low: numeric("units_low", { precision: 3, scale: 1 }),
+    units_high: numeric("units_high", { precision: 3, scale: 1 }),
+    units_max: numeric("units_max", { precision: 3, scale: 1 }),
+    restr_major: text("restr_major"),
+    restr_class: text("restr_class"),
+    restr_school: text("restr_school"),
     prereq: text("prereq"),
     coreq: text("coreq"),
-    updatedAt: timestamp("updated_at", {
+    updated_at: timestamp("updated_at", {
       precision: 3,
       mode: "string",
     }).notNull(),
@@ -220,3 +219,14 @@ export const courses = pgTable(
     };
   }
 );
+
+// Validated Table Types
+import type { z } from "zod";
+import type { validate as t } from "@ofc/transformer/parse";
+
+export type Term = z.infer<typeof t.term>;
+export type Department = z.infer<typeof t.dept>;
+export type Course = z.infer<typeof t.course>;
+export type Section = z.infer<typeof t.section>;
+export type SDetail = z.infer<typeof t.s_detail>;
+export type SInstr = z.infer<typeof t.s_instr>;

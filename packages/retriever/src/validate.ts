@@ -183,8 +183,23 @@ const course_data = {
   units: z
     .string()
     .transform(u => u.split(", "))
-    .pipe(z.tuple([units]).or(z.tuple([units, unit])))
-    .transform(([{ min, max }, total]) => ({ min, max, total })),
+    .pipe(
+      z
+        .tuple([units])
+        .or(
+          z.tuple([units, unit.transform(n => (n === "0.0" ? undefined : n))])
+        )
+    )
+    .transform(([{ min, max }, total]) => ({
+      min: parseFloat(min),
+      max: max ? parseFloat(max) : undefined,
+      total: total ? parseFloat(total) : undefined,
+    }))
+    .transform(({ min, max, total }) => ({
+      min: Math.min(min, max ?? min).toString(),
+      max: max ? Math.max(min, max).toString() : undefined,
+      total: total ? Math.max(min, max ?? total, total).toString() : undefined,
+    })),
   restriction_by_major: z.string().or(empty_object),
   restriction_by_class: z.string().or(empty_object),
   restriction_by_school: z.string().or(empty_object),

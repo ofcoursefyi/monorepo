@@ -63,51 +63,56 @@ await db
   .values(
     transform.departments(api_deps).map(d => ({
       ...d,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }))
   )
   .onConflictDoUpdate({
     target: [departments.code],
-    set: { name: sql`EXCLUDED.name`, updatedAt: sql`EXCLUDED.updated_at` },
+    set: { name: sql`EXCLUDED.name`, updated_at: sql`EXCLUDED.updated_at` },
   });
 console.log("Upserted all departments");
 
-await db
-  .insert(courses)
-  .values(xs.map(x => ({ ...x.course, updatedAt: new Date().toISOString() })))
-  .onConflictDoUpdate({
-    target: [courses.term, courses.course],
-    set: {
-      coreq: sql`EXCLUDED.coreq`,
-      desc: sql`EXCLUDED.desc`,
-      prereq: sql`EXCLUDED.prereq`,
-      restrClass: sql`EXCLUDED.restr_class`,
-      restrMajor: sql`EXCLUDED.restr_major`,
-      restrSchool: sql`EXCLUDED.restr_school`,
-      sequence: sql`EXCLUDED.sequence`,
-      suffix: sql`EXCLUDED.suffix`,
-      title: sql`EXCLUDED.title`,
-      unitsHigh: sql`EXCLUDED.units_high`,
-      unitsLow: sql`EXCLUDED.units_low`,
-      unitsMax: sql`EXCLUDED.units_max`,
-      updatedAt: sql`CASE 
+for (const c of batch(
+  xs.map(x => ({ ...x.course, updated_at: new Date().toISOString() })),
+  1000
+)) {
+  await db
+    .insert(courses)
+    .values(c)
+    .onConflictDoUpdate({
+      target: [courses.term, courses.course],
+      set: {
+        coreq: sql`EXCLUDED.coreq`,
+        desc: sql`EXCLUDED.desc`,
+        prereq: sql`EXCLUDED.prereq`,
+        restr_class: sql`EXCLUDED.restr_class`,
+        restr_major: sql`EXCLUDED.restr_major`,
+        restr_school: sql`EXCLUDED.restr_school`,
+        sequence: sql`EXCLUDED.sequence`,
+        suffix: sql`EXCLUDED.suffix`,
+        title: sql`EXCLUDED.title`,
+        units_high: sql`EXCLUDED.units_high`,
+        units_low: sql`EXCLUDED.units_low`,
+        units_max: sql`EXCLUDED.units_max`,
+        updated_at: sql`CASE 
         WHEN ${courses.coreq} IS DISTINCT FROM EXCLUDED.coreq
           OR ${courses.desc} IS DISTINCT FROM EXCLUDED.desc
           OR ${courses.prereq} IS DISTINCT FROM EXCLUDED.prereq
-          OR ${courses.restrClass} IS DISTINCT FROM EXCLUDED.restr_class
-          OR ${courses.restrMajor} IS DISTINCT FROM EXCLUDED.restr_major
-          OR ${courses.restrSchool} IS DISTINCT FROM EXCLUDED.restr_school
+          OR ${courses.restr_class} IS DISTINCT FROM EXCLUDED.restr_class
+          OR ${courses.restr_major} IS DISTINCT FROM EXCLUDED.restr_major
+          OR ${courses.restr_school} IS DISTINCT FROM EXCLUDED.restr_school
           OR ${courses.sequence} IS DISTINCT FROM EXCLUDED.sequence
           OR ${courses.suffix} IS DISTINCT FROM EXCLUDED.suffix
           OR ${courses.title} IS DISTINCT FROM EXCLUDED.title
-          OR ${courses.unitsHigh} IS DISTINCT FROM EXCLUDED.units_high
-          OR ${courses.unitsLow} IS DISTINCT FROM EXCLUDED.units_low
-          OR ${courses.unitsMax} IS DISTINCT FROM EXCLUDED.units_max
+          OR ${courses.units_high} IS DISTINCT FROM EXCLUDED.units_high
+          OR ${courses.units_low} IS DISTINCT FROM EXCLUDED.units_low
+          OR ${courses.units_max} IS DISTINCT FROM EXCLUDED.units_max
         THEN EXCLUDED.updated_at
-        ELSE ${courses.updatedAt}
+        ELSE ${courses.updated_at}
         END`,
-    },
-  });
+      },
+    });
+}
 console.log("Upserted all courses");
 
 for (const s of batch(
@@ -122,18 +127,18 @@ for (const s of batch(
         dcode: s.dcode,
         desc: s.desc,
         notes: s.notes,
-        secTitle: s.sec_title,
+        sec_title: s.sec_title,
         session: s.session,
-        takenSeats: s.taken_seats,
+        taken_seats: s.taken_seats,
         title: s.title,
-        totSeats: s.tot_seats,
+        tot_seats: s.tot_seats,
         type: s.type,
-        unitsHigh: s.units_high,
-        unitsLow: s.units_low,
+        units_high: s.units_high,
+        units_low: s.units_low,
         term: s.term,
         section: s.section,
         cancelled: s.cancelled,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }))
     )
     .onConflictDoUpdate({
@@ -146,13 +151,13 @@ for (const s of batch(
         course: sql`EXCLUDED.course`,
         desc: sql`EXCLUDED.desc`,
         notes: sql`EXCLUDED.notes`,
-        secTitle: sql`EXCLUDED.sec_title`,
-        takenSeats: sql`EXCLUDED.taken_seats`,
+        sec_title: sql`EXCLUDED.sec_title`,
+        taken_seats: sql`EXCLUDED.taken_seats`,
         title: sql`EXCLUDED.title`,
-        totSeats: sql`EXCLUDED.tot_seats`,
-        unitsLow: sql`EXCLUDED.units_low`,
-        unitsHigh: sql`EXCLUDED.units_high`,
-        updatedAt: sql`CASE 
+        tot_seats: sql`EXCLUDED.tot_seats`,
+        units_low: sql`EXCLUDED.units_low`,
+        units_high: sql`EXCLUDED.units_high`,
+        updated_at: sql`CASE
         WHEN ${sections.cancelled} IS DISTINCT FROM EXCLUDED.cancelled
           OR ${sections.dcode} IS DISTINCT FROM EXCLUDED.dcode
           OR ${sections.session} IS DISTINCT FROM EXCLUDED.session
@@ -160,14 +165,14 @@ for (const s of batch(
           OR ${sections.course} IS DISTINCT FROM EXCLUDED.course
           OR ${sections.desc} IS DISTINCT FROM EXCLUDED.desc
           OR ${sections.notes} IS DISTINCT FROM EXCLUDED.notes
-          OR ${sections.secTitle} IS DISTINCT FROM EXCLUDED.sec_title
-          OR ${sections.takenSeats} IS DISTINCT FROM EXCLUDED.taken_seats
+          OR ${sections.sec_title} IS DISTINCT FROM EXCLUDED.sec_title
+          OR ${sections.taken_seats} IS DISTINCT FROM EXCLUDED.taken_seats
           OR ${sections.title} IS DISTINCT FROM EXCLUDED.title
-          OR ${sections.totSeats} IS DISTINCT FROM EXCLUDED.tot_seats
-          OR ${sections.unitsLow} IS DISTINCT FROM EXCLUDED.units_low
-          OR ${sections.unitsHigh} IS DISTINCT FROM EXCLUDED.units_high
+          OR ${sections.tot_seats} IS DISTINCT FROM EXCLUDED.tot_seats
+          OR ${sections.units_low} IS DISTINCT FROM EXCLUDED.units_low
+          OR ${sections.units_high} IS DISTINCT FROM EXCLUDED.units_high
         THEN EXCLUDED.updated_at
-        ELSE ${sections.updatedAt}
+        ELSE ${sections.updated_at}
         END`,
       },
     });
@@ -188,19 +193,19 @@ for (const sd of batch(
         term: sd.term,
         day: sd.day,
         loc: sd.loc,
-        endTime: sd.end_time,
-        startTime: sd.start_time,
-        updatedAt: new Date().toISOString(),
+        end_time: sd.end_time,
+        start_time: sd.start_time,
+        updated_at: new Date().toISOString(),
       }))
     )
     .onConflictDoUpdate({
       target: [sdetails.term, sdetails.section, sdetails.id],
       set: {
         day: sql`EXCLUDED.day`,
-        endTime: sql`EXCLUDED.end_time`,
+        end_time: sql`EXCLUDED.end_time`,
         loc: sql`EXCLUDED.loc`,
-        startTime: sql`EXCLUDED.start_time`,
-        updatedAt: sql`EXCLUDED.updated_at`,
+        start_time: sql`EXCLUDED.start_time`,
+        updated_at: sql`EXCLUDED.updated_at`,
       },
     });
   console.log("Upserted a batch of sdetails");
@@ -254,17 +259,17 @@ for (const si of batch(
       .insert(sinstructors)
       .values(
         si.map(si => ({
-          instrId: i_map.get(si.instr_name)!,
+          instr_id: i_map.get(si.instr_name)!,
           sec: si.sec,
           term: si.term,
-          instrName: si.instr_name,
-          updatedAt: new Date().toISOString(),
+          instr_name: si.instr_name,
+          updated_at: new Date().toISOString(),
         }))
       )
       .onConflictDoUpdate({
-        target: [sinstructors.term, sinstructors.instrName, sinstructors.sec],
+        target: [sinstructors.term, sinstructors.instr_name, sinstructors.sec],
         set: {
-          updatedAt: sql`EXCLUDED.updated_at`,
+          updated_at: sql`EXCLUDED.updated_at`,
         },
       });
   });

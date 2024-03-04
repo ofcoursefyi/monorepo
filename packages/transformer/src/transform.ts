@@ -25,12 +25,12 @@ type DB_SINSTR = z.infer<typeof vresult.s_instr>;
 
 export const transform = {
   term: (t: API_TERM): DB_TERM => {
-    const [y, s] = [t.slice(2, 4), t.slice(4, 5)].map(parseInt);
-    return s === 1
-      ? (`SP${y}` as const)
-      : s === 2
-        ? (`SU${y}` as const)
-        : (`FA${y}` as const);
+    const [y, s] = [t.slice(2, 4), t.slice(4)].map(n => parseInt(n));
+    if (s === 1) return `SP${y}` as const;
+    if (s === 2) return `SU${y}` as const;
+    if (s === 3) return `FA${y}` as const;
+
+    throw new Error("invalid term");
   },
 
   departments: (ds: API_DEPARTMENT): DB_DEPARTMENT[] =>
