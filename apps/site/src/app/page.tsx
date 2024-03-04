@@ -1,40 +1,47 @@
 import { unstable_noStore as noStore } from "next/cache";
-import Link from "next/link";
 
 import { CreatePost } from "@/app/_components/create-post";
 import { api } from "@/trpc/server";
+import { DataTable } from "@/ui/components/data-table";
+import { columns } from "./_components/columns";
 
 export default async function Home() {
   noStore();
-  const hello = await api.usc.hello.query({ text: "from tRPC" });
+  const data = await api.usc.courses.query();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
+      <div className="container flex flex-col items-center justify-center px-4 py-16 ">
         <div className="flex flex-col items-center gap-2">
-          <p className="text-2xl">
-            {hello ? hello.greeting : "Loading tRPC query..."}
-          </p>
+          <p className="text-2xl"></p>
         </div>
-
-        <CrudShowcase />
+        {data ? (
+          <DataTable
+            columns={columns}
+            data={data.map((c) => ({
+              ...c,
+              units: c.units_high
+                ? `${c.units_low}-${c.units_high}`
+                : `${c.units_low}`,
+            }))}
+            initial_state={{
+              columnVisibility: {
+                term: false,
+                dept: false,
+                prefix: false,
+                number: false,
+                sequence: false,
+                restr_class: false,
+                restr_major: false,
+                restr_school: false,
+              },
+            }}
+          />
+        ) : (
+          "no courses"
+        )}
+        <CreatePost />
       </div>
     </main>
-  );
-}
-
-async function CrudShowcase() {
-  const latestPost = await api.usc.getLatest.query();
-
-  return (
-    <div className="w-full max-w-xs">
-      {latestPost ? (
-        <p className="truncate">Your most recent post: {latestPost.course}</p>
-      ) : (
-        <p>You have no posts yet.</p>
-      )}
-
-      <CreatePost />
-    </div>
   );
 }
